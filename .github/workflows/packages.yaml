@@ -3,6 +3,11 @@ name: Build/Deploy Packages
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     name: Build for ${{ matrix.release }}(${{ matrix.arch }})
@@ -33,9 +38,37 @@ jobs:
           cd openwrt-feeds
           chmod +x ./scripts/build.sh
           ./scripts/build.sh
+      
+      - name: Prepare Artifacts
+        run: |
+          mkdir -p artifacts/${{ matrix.release }}/packages/${{ matrix.arch }}/
+          cp -r openwrt-feeds/build/bin/packages/${{ matrix.arch }}/custom/* artifacts/${{ matrix.release }}/packages/${{ matrix.arch }}/
 
       - name: Publish Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: packages-${{ matrix.release }}-${{ matrix.arch }}
-          path: openwrt-feeds/build/bin/packages/${{ matrix.arch }}/custom/*
+          path: artifacts/**
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: public
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: public
+          merge-multiple: true
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
