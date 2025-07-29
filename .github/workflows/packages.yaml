@@ -1,0 +1,41 @@
+name: Build/Deploy Packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.release }}(${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        release:
+          - 24.10.2
+        arch:
+          - x86_64
+          - mipsel_24kc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ratsdev/openwrt-feeds
+          token: ${{ secrets.GH_REPO_TOKEN }}
+          submodules: recursive
+          path: openwrt-feeds
+
+      - name: Build
+        env:
+          RELEASE: ${{ matrix.release }}
+          ARCH: ${{ matrix.arch }}
+          FEED_NAME: custom
+        run: |
+          cd openwrt-feeds
+          chmod +x ./scripts/build.sh
+          ./scripts/build.sh
+
+      - name: Publish Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.release }}-${{ matrix.arch }}
+          path: openwrt-feeds/build/bin/packages/${{ matrix.arch }}/custom/*
