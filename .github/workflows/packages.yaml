@@ -34,6 +34,7 @@ jobs:
           RELEASE: ${{ matrix.release }}
           ARCH: ${{ matrix.arch }}
           FEED_NAME: custom
+          SIGNING_KEY: ${{ secrets.OPENWRT_SIGNING_PRIVKEY }}
         run: |
           cd openwrt-feeds
           chmod +x ./scripts/build.sh
@@ -58,11 +59,16 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Download artifacts
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: public
           merge-multiple: true
+      
+      - name: Write PubKey
+        run: |
+          echo "untrusted comment: Public usign key for RatsDev" > public/signing_key.pub
+          echo "${{ vars.OPENWRT_SIGNING_PUBKEY }}" >> public/signing_key.pub
 
       - name: Upload to GitHub Pages
         uses: actions/upload-pages-artifact@v3
