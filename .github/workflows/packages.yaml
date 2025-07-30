@@ -67,8 +67,17 @@ jobs:
       
       - name: Write PubKey
         run: |
-          echo "untrusted comment: Public usign key for RatsDev" > public/signing_key.pub
-          echo "${{ vars.OPENWRT_SIGNING_PUBKEY }}" >> public/signing_key.pub
+          mkdir -p public/keys
+          echo "untrusted comment: Public usign key for RatsDev" > public/keys/${{ vars.OPENWRT_SIGNING_ID }}
+          echo "${{ vars.OPENWRT_SIGNING_PUBKEY }}" >> public/keys/${{ vars.OPENWRT_SIGNING_ID }}
+      
+      - uses: gacts/directory-listing@v1
+        with:
+          target: public
+          ignore: |
+            tmp/**
+            **/index.html
+          footer: RatsDev
 
       - name: Upload to GitHub Pages
         uses: actions/upload-pages-artifact@v3
